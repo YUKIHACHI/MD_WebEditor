@@ -5,6 +5,7 @@ import {
   Bold,
   Code2,
   Download,
+  Edit3,
   FileDown,
   FilePlus2,
   FileText,
@@ -12,6 +13,7 @@ import {
   Italic,
   List,
   Moon,
+  Palette,
   PanelLeftClose,
   PanelRightClose,
   Quote,
@@ -21,6 +23,7 @@ import {
   SplitSquareHorizontal,
   Sun,
   Table2,
+  Trash2,
   Upload,
   X
 } from 'lucide-react';
@@ -143,11 +146,25 @@ function App() {
   const [replacement, setReplacement] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState(Date.now());
   const [contextMenu, setContextMenu] = useState(null);
+  const [renamingDocId, setRenamingDocId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [colorMenu, setColorMenu] = useState(null);
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const toolbarUndoStackRef = useRef([]);
   const startupFilesLoadedRef = useRef(false);
   const desktopApi = window.markdownEditorDesktop;
+
+  const TEXT_COLORS = [
+    { label: '赤', color: '#e53e3e', html: 'red' },
+    { label: '青', color: '#3182ce', html: 'blue' },
+    { label: '緑', color: '#38a169', html: 'green' },
+    { label: '黄', color: '#d69e2e', html: 'goldenrod' },
+    { label: '紫', color: '#805ad5', html: 'purple' },
+    { label: 'オレンジ', color: '#dd6b20', html: 'darkorange' },
+    { label: 'ピンク', color: '#d53f8c', html: 'deeppink' },
+    { label: 'シアン', color: '#0891b2', html: 'darkcyan' },
+  ];
 
   const activeDoc = useMemo(() => {
     return docs.find((doc) => doc.id === (activeId ?? docs[0]?.id)) ?? docs[0];
@@ -200,10 +217,11 @@ function App() {
   }, [desktopApi]);
 
   useEffect(() => {
-    if (!contextMenu) return undefined;
+    if (!contextMenu && !colorMenu) return undefined;
 
     function closeMenu() {
       setContextMenu(null);
+      setColorMenu(null);
     }
 
     function closeOnEscape(event) {
@@ -219,7 +237,7 @@ function App() {
       window.removeEventListener('contextmenu', closeMenu);
       window.removeEventListener('keydown', closeOnEscape);
     };
-  }, [contextMenu]);
+  }, [contextMenu, colorMenu]);
 
   function updateActiveContent(content) {
     setDocs((current) =>
@@ -293,10 +311,28 @@ function App() {
     if (!textarea || !activeDoc) return;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selected = activeDoc.content.slice(start, end) || placeholder;
-    const inserted = `${before}${selected}${after}`;
+    const selected = activeDoc.content.slice(start, end);
 
-    applyTextareaInsertion(start, end, inserted, start + before.length, start + before.length + selected.length);
+    // Toggle: if selection is already wrapped with the markers, remove them
+    if (before && after && selected) {
+      const beforeContent = activeDoc.content.slice(start - before.length, start);
+      const afterContent = activeDoc.content.slice(end, end + after.length);
+      if (beforeContent === before && afterContent === after) {
+        // Remove the wrapping markers
+        applyTextareaInsertion(start - before.length, end + after.length, selected, start - before.length, end - before.length);
+        return;
+      }
+      // Also check if the selected text itself starts/ends with markers (user selected including markers)
+      if (selected.startsWith(before) && selected.endsWith(after) && selected.length > before.length + after.length) {
+        const inner = selected.slice(before.length, -after.length);
+        applyTextareaInsertion(start, end, inner, start, start + inner.length);
+        return;
+      }
+    }
+
+    const text = selected || placeholder;
+    const inserted = `${before}${text}${after}`;
+    applyTextareaInsertion(start, end, inserted, start + before.length, start + before.length + text.length);
   }
 
   function insertLine(prefix, placeholder) {
@@ -317,19 +353,102 @@ function App() {
     setContextMenu(null);
   }
 
-  function openSidebarContextMenu(event) {
+  function openSidebarContextMenu(event, docId = null) {
     event.preventDefault();
     event.stopPropagation();
 
-    const menuWidth = 190;
-    const menuHeight = 44;
+    const menuWidth = 210;
+    const menuHeight = docId ? 140 : 44;
     const x = Math.min(event.clientX, window.innerWidth - menuWidth - 8);
     const y = Math.min(event.clientY, window.innerHeight - menuHeight - 8);
 
     setContextMenu({
       x: Math.max(8, x),
-      y: Math.max(8, y)
+      y: Math.max(8, y),
+      targetDocId: docId
     });
+  }
+
+  function deleteDocument(id) {
+    if (docs.length === 1) return;
+    const nextDocs = docs.filter((doc) => doc.id !== id);
+    setDocs(nextDocs);
+    if (activeDoc.id === id) setActiveId(nextDocs[0].id);
+    setContextMenu(null);
+  }
+
+  function startRename(id) {
+    const doc = docs.find((d) => d.id === id);
+    if (!doc) return;
+    setRenamingDocId(id);
+    setRenameValue(doc.name);
+    setContextMenu(null);
+  }
+
+  function confirmRename() {
+    if (!renamingDocId || !renameValue.trim()) {
+      setRenamingDocId(null);
+      return;
+    }
+    setDocs((current) =>
+      current.map((doc) => (doc.id === renamingDocId ? { ...doc, name: renameValue.trim() } : doc))
+    );
+    setRenamingDocId(null);
+  }
+
+  function openColorMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const textarea = editorRef.current;
+    if (!textarea || !activeDoc) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return; // no selection
+
+    // Position the color menu near the cursor/toolbar area
+    const rect = textarea.getBoundingClientRect();
+    setColorMenu({
+      x: Math.min(event?.clientX ?? rect.left + 100, window.innerWidth - 220),
+      y: Math.min((event?.clientY ?? rect.top) + 20, window.innerHeight - 200),
+      selectionStart: start,
+      selectionEnd: end
+    });
+  }
+
+  function applyColor(htmlColor) {
+    const textarea = editorRef.current;
+    if (!textarea || !activeDoc || !colorMenu) return;
+    const { selectionStart: start, selectionEnd: end } = colorMenu;
+    const selected = activeDoc.content.slice(start, end);
+    if (!selected) return;
+
+    // Check if already wrapped with a color span — if so, replace/remove
+    const colorSpanRegex = /^<span style="color:\s*[^"]+">(.+?)<\/span>$/s;
+    const match = selected.match(colorSpanRegex);
+    let text;
+    if (match) {
+      // Already colored — re-wrap with new color
+      text = `<span style="color: ${htmlColor}">${match[1]}</span>`;
+    } else {
+      // Also check if surrounding content has the span wrapper
+      const beforeCheck = activeDoc.content.slice(Math.max(0, start - 50), start);
+      const afterCheck = activeDoc.content.slice(end, end + 10);
+      const openMatch = beforeCheck.match(/<span style="color:\s*[^"]+">$/);
+      const closeMatch = afterCheck.startsWith('</span>');
+      if (openMatch && closeMatch) {
+        // Remove outer span and re-apply
+        const outerStart = start - openMatch[0].length;
+        const outerEnd = end + 7; // '</span>'.length
+        text = `<span style="color: ${htmlColor}">${selected}</span>`;
+        applyTextareaInsertion(outerStart, outerEnd, text, outerStart, outerStart + text.length);
+        setColorMenu(null);
+        return;
+      }
+      text = `<span style="color: ${htmlColor}">${selected}</span>`;
+    }
+
+    applyTextareaInsertion(start, end, text, start, start + text.length);
+    setColorMenu(null);
   }
 
   function closeDocument(id) {
@@ -449,6 +568,7 @@ function App() {
           <ToolbarButton label="リスト" onClick={() => insertLine('- ', 'リスト')}><List size={18} /></ToolbarButton>
           <ToolbarButton label="引用" onClick={() => insertLine('> ', '引用')}><Quote size={18} /></ToolbarButton>
           <ToolbarButton label="テーブル" onClick={() => insertMarkdown('\n| 列1 | 列2 |\n| --- | --- |\n| 値 | 値 |\n', '', '')}><Table2 size={18} /></ToolbarButton>
+          <ToolbarButton label="文字色" onClick={(e) => openColorMenu(e)}><Palette size={18} /></ToolbarButton>
         </div>
 
         <div className="command-group right">
@@ -476,12 +596,32 @@ function App() {
       </section>
 
       <main className="workspace">
-        <aside className="sidebar" onContextMenu={openSidebarContextMenu}>
+        <aside className="sidebar" onContextMenu={(e) => openSidebarContextMenu(e)}>
           <div className="sidebar-title">ファイル</div>
           <div className="tab-list">
             {docs.map((doc) => (
-              <button key={doc.id} className={`file-tab ${doc.id === activeDoc?.id ? 'is-active' : ''}`} onClick={() => setActiveId(doc.id)}>
-                <span>{doc.name}</span>
+              <button
+                key={doc.id}
+                className={`file-tab ${doc.id === activeDoc?.id ? 'is-active' : ''}`}
+                onClick={() => setActiveId(doc.id)}
+                onContextMenu={(e) => openSidebarContextMenu(e, doc.id)}
+              >
+                {renamingDocId === doc.id ? (
+                  <input
+                    className="rename-input"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={confirmRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') confirmRename();
+                      if (e.key === 'Escape') setRenamingDocId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                  />
+                ) : (
+                  <span>{doc.name}</span>
+                )}
                 {doc.content !== doc.savedContent && <i />}
                 {docs.length > 1 && (
                   <X
@@ -539,6 +679,35 @@ function App() {
             <FilePlus2 size={16} />
             <span>新しいファイルを作成</span>
           </button>
+          {contextMenu.targetDocId && (
+            <>
+              <button type="button" role="menuitem" onClick={() => startRename(contextMenu.targetDocId)}>
+                <Edit3 size={16} />
+                <span>ファイルの名前を変更</span>
+              </button>
+              <button type="button" role="menuitem" onClick={() => deleteDocument(contextMenu.targetDocId)}>
+                <Trash2 size={16} />
+                <span>ファイルを削除</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {colorMenu && (
+        <div
+          className="context-menu color-menu"
+          style={{ left: colorMenu.x, top: colorMenu.y }}
+          role="menu"
+          onClick={(event) => event.stopPropagation()}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          {TEXT_COLORS.map((c) => (
+            <button key={c.html} type="button" role="menuitem" onClick={() => applyColor(c.html)}>
+              <span className="color-swatch" style={{ background: c.color }} />
+              <span>{c.label}</span>
+            </button>
+          ))}
         </div>
       )}
 
