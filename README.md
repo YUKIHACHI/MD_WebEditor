@@ -41,7 +41,7 @@ Web公開版を使う場合は、以下のURLを開くだけです。
 
 [https://yukihachi.github.io/MD_WebEditor/](https://yukihachi.github.io/MD_WebEditor/)
 
-```md
+
 ## ローカルでの起動方法
 
 まず、リポジトリをクローンして、クローンしたディレクトリに移動します。
@@ -49,7 +49,7 @@ Web公開版を使う場合は、以下のURLを開くだけです。
 ```bash
 git clone <リポジトリURL>
 cd <リポジトリ名>
-
+```
 依存関係をインストールし、開発サーバーを起動します。
 ```
 npm install
@@ -77,11 +77,11 @@ npm run desktop:build
 - ツールバーの挿入操作は `Ctrl+Z` で戻せます。
 - コードブロックに `js` などの言語名を書くと、プレビュー側にも言語ラベルが表示されます。
 
-````markdown
+
 ```js
 console.log("Markdown Editor");
 ```
-````
+
 
 ## 技術スタック
 
