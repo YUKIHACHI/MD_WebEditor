@@ -38,7 +38,7 @@ Markdown を書く道具はたくさんありますが、このエディター�
 公開版を使う場合は、以下のURLを開くだけです。
 
 ```text
-https://yukihachi.github.io/MD_WebEditor/
+[https://yukihachi.github.io/MD_WebEditor/]((https://yukihachi.github.io/MD_WebEditor/))
 ```
 
 ローカルで起動する場合は、リポジトリを取得してから以下を実行します。
