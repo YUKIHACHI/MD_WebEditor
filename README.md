@@ -3,7 +3,9 @@
 ブラウザだけで使える、ローカル保存対応の Markdown エディターです。  
 `.md` / `.markdown` を読み込んで編集し、GitHub 風プレビューで確認しながら、HTML や PDF 用の印刷画面まで出力できます。
 
-[GitHub Pages で開く](https://yukihachi.github.io/MD_WebEditor/)
+GitHub Pagesで公開しています。
+
+# [GitHub Pages で開く](https://yukihachi.github.io/MD_WebEditor/)
 
 ## 特徴
 
@@ -35,18 +37,28 @@ Markdown を書く道具はたくさんありますが、このエディター�
 
 ## 使い方
 
-公開版を使う場合は、以下のURLを開くだけです。
+Web公開版を使う場合は、以下のURLを開くだけです。
 
 [https://yukihachi.github.io/MD_WebEditor/](https://yukihachi.github.io/MD_WebEditor/)
 
-ローカルで起動する場合は、リポジトリを取得してから以下を実行します。
+```md
+## ローカルでの起動方法
+
+まず、リポジトリをクローンして、クローンしたディレクトリに移動します。
 
 ```bash
+git clone <リポジトリURL>
+cd <リポジトリ名>
+
+依存関係をインストールし、開発サーバーを起動します。
+```
 npm install
 npm run dev
 ```
+起動後、ブラウザで http://localhost:5173/ を開きます。
 
-起動後、ブラウザで `http://localhost:5173/` を開きます。
+
+`<リポジトリURL>` と `<リポジトリ名>` は実際のものに置き換えてください。
 
 ## デスクトップアプリとして使う
 
@@ -85,6 +97,7 @@ console.log("Markdown Editor");
 
 このエディターはサーバーに Markdown 本文を送信しません。  
 読み込んだファイルや自動保存の内容は、ブラウザ上のローカルな保存領域を使って扱います。
+当エディターを使用したことによって生じたデータの損失などの損害については一切の責任を負いかねます・
 
 ## ライセンス
 
