@@ -1,8 +1,15 @@
 {
+  "name": "md-webeditor",
+  "version": "1.0.0",
+  "description": "Local Markdown editor with realtime preview, HTML export, and desktop file association support.",
+  "author": "YUKIHACHI",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "desktop:dev": "concurrently -k \"npm run dev\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "desktop:build": "npm run build && electron-builder"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -13,5 +20,36 @@
     "react": "latest",
     "react-dom": "latest"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "concurrently": "latest",
+    "electron": "latest",
+    "electron-builder": "latest",
+    "wait-on": "latest"
+  },
+  "build": {
+    "appId": "com.yukihachi.mdwebeditor",
+    "productName": "MD WebEditor",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "md",
+          "markdown"
+        ],
+        "name": "Markdown Document",
+        "description": "Markdown document",
+        "role": "Editor"
+      }
+    ]
+  }
 }

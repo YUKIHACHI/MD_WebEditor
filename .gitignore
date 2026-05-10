@@ -1,5 +1,6 @@
 node_modules/
 dist/
+release/
 Temp/
 .DS_Store
 desktop.ini

@@ -50,6 +50,17 @@ npm run dev
 
 起動後、ブラウザで `http://localhost:5173/` を開きます。
 
+## デスクトップアプリとして使う
+
+Windows で `.md` / `.markdown` を開くアプリとして使いたい場合は、Electron 版をビルドできます。
+
+```bash
+npm run desktop:build
+```
+
+ビルド後、`release` フォルダに `MD WebEditor Setup 1.0.0.exe` が作成されます。  
+インストールすると、Markdown ファイルを開くアプリとして `MD WebEditor` を選べるようになります。
+
 ## 操作メモ
 
 - 左のファイルメニューを右クリックすると、新しいファイルを作成できます。

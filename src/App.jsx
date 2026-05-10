@@ -86,7 +86,15 @@ function createDoc(name = 'untitled.md', content = starterMarkdown) {
     content,
     savedContent: content,
     fileHandle: null,
+    filePath: null,
     updatedAt: Date.now()
+  };
+}
+
+function createDesktopDoc(file) {
+  return {
+    ...createDoc(file.name, file.content),
+    filePath: file.path
   };
 }
 
@@ -138,6 +146,8 @@ function App() {
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const toolbarUndoStackRef = useRef([]);
+  const startupFilesLoadedRef = useRef(false);
+  const desktopApi = window.markdownEditorDesktop;
 
   const activeDoc = useMemo(() => {
     return docs.find((doc) => doc.id === (activeId ?? docs[0]?.id)) ?? docs[0];
@@ -176,6 +186,18 @@ function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     setLastSavedAt(Date.now());
   }, [docs, activeDoc?.id, theme, viewMode]);
+
+  useEffect(() => {
+    if (!desktopApi || startupFilesLoadedRef.current) return;
+    startupFilesLoadedRef.current = true;
+
+    desktopApi.getStartupFiles().then((files) => {
+      if (!Array.isArray(files) || files.length === 0) return;
+      const loaded = files.map(createDesktopDoc);
+      setDocs((current) => [...current, ...loaded]);
+      setActiveId(loaded[0].id);
+    });
+  }, [desktopApi]);
 
   useEffect(() => {
     if (!contextMenu) return undefined;
@@ -329,8 +351,34 @@ function App() {
     event.target.value = '';
   }
 
+  async function openMarkdownFiles() {
+    if (desktopApi) {
+      const files = await desktopApi.openMarkdownFiles();
+      if (!Array.isArray(files) || files.length === 0) return;
+      const loaded = files.map(createDesktopDoc);
+      setDocs((current) => [...current, ...loaded]);
+      setActiveId(loaded[0].id);
+      return;
+    }
+
+    fileInputRef.current?.click();
+  }
+
   async function saveMarkdown() {
     if (!activeDoc) return;
+
+    if (desktopApi) {
+      const savedFile = await desktopApi.saveMarkdownFile({
+        filePath: activeDoc.filePath,
+        suggestedName: activeDoc.name.match(/\.(md|markdown)$/i) ? activeDoc.name : `${activeDoc.name}.md`,
+        content: activeDoc.content
+      });
+
+      if (!savedFile) return;
+      updateActiveDoc({ name: savedFile.name, filePath: savedFile.path, savedContent: activeDoc.content });
+      return;
+    }
+
     const blob = new Blob([activeDoc.content], { type: 'text/markdown;charset=utf-8' });
     const name = activeDoc.name.match(/\.(md|markdown)$/i) ? activeDoc.name : `${activeDoc.name}.md`;
     if ('showSaveFilePicker' in window) {
@@ -391,7 +439,7 @@ function App() {
 
         <div className="command-group">
           <ToolbarButton label="新規ファイル" onClick={newDocument}><FilePlus2 size={18} /></ToolbarButton>
-          <ToolbarButton label=".md / .markdown を開く" onClick={() => fileInputRef.current?.click()}><Upload size={18} /></ToolbarButton>
+          <ToolbarButton label=".md / .markdown を開く" onClick={openMarkdownFiles}><Upload size={18} /></ToolbarButton>
           <ToolbarButton label=".mdとして保存" onClick={saveMarkdown}><Save size={18} /></ToolbarButton>
           <span className="divider" />
           <ToolbarButton label="見出し" onClick={() => insertLine('# ', '見出し')}><Heading1 size={18} /></ToolbarButton>

@@ -2,6 +2,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: '/MD_WebEditor/',
+  base: process.env.GITHUB_PAGES ? '/MD_WebEditor/' : './',
   plugins: [react()]
 });
