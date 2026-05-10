@@ -43,7 +43,8 @@ Web公開版を使う場合は、以下のURLを開くだけです。
 
 
 ##　デモ動画
-![demo](./demo_15s.gif)
+<img width="800" height="450" alt="demo_15s" src="https://github.com/user-attachments/assets/4963a586-3978-431b-9f2e-15bfecb7e5c0" />
+
 
 ## ローカルでの起動方法
 
