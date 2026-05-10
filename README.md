@@ -42,6 +42,9 @@ Web公開版を使う場合は、以下のURLを開くだけです。
 [https://yukihachi.github.io/MD_WebEditor/](https://yukihachi.github.io/MD_WebEditor/)
 
 
+##　デモ動画
+![demo](./demo_15s.gif)
+
 ## ローカルでの起動方法
 
 まず、リポジトリをクローンして、クローンしたディレクトリに移動します。
